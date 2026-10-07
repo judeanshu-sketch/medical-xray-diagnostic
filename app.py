@@ -9,7 +9,7 @@ st.title("🫁 X-Ray Vision Diagnostic Panel")
 st.write("Upload a patient's chest X-ray scan below for rapid automated analysis.")
 
 # 🔗 Paste your direct download link below
-MODEL_URL = "https://drive.google.com/file/d/1k9U8pCefLNhcqibW7_uJsqBOnRboR8RF/view?usp=sharing"
+MODEL_URL = "https://huggingface.co/datasets/aj0906/medical-weights/blob/main/pneumonia_resnet34.pkl"
 MODEL_PATH = "pneumonia_resnet34.pkl"
 
 # Automatically stream-download the weights file if it's missing from the app instance
