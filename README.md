@@ -12,4 +12,4 @@ A deep-learning computer vision application built to classify human chest X-ray 
 * **Backend Core:** Python, PyTorch, Fast.ai
 * **Web Framework:** Streamlit
 * **Deployment Pipeline:** Streamlit Community Cloud embedded into a custom static HTML/CSS web portfolio.
-*
+
