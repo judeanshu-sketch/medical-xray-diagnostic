@@ -1,5 +1,3 @@
-fastai
+gdown
 torch
 torchvision 
-pillow
-streamlit
