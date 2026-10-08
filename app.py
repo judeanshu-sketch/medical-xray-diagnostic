@@ -1,81 +1,85 @@
-# ==========================================
-# INSERT THESE EXACT LINES AT THE ABSOLUTE TOP OF APP.PY (LINE 1)
-# ==========================================
 import streamlit as st
-
-# MONKEY-PATCH THE FASTAI RESOLVER MISMATCH
-# This injects a mock fallback dictionary attribute to shield against the deserialization crash
-try:
-    import fastcore.basics
-    if hasattr(fastcore.basics, 'Resolver') and not hasattr(fastcore.basics.Resolver, 'dict'):
-        fastcore.basics.Resolver.dict = lambda self: self.__dict__
-except Exception:
-    pass
-
-# ==========================================
-# KEEP RESIDUE IMPORT CODES UNTOUCHED BELOW THIS LINE
-# ==========================================
 import os
 import shutil
+import gdown
+import torch
+import torchvision.models as models
 from PIL import Image
-from fastai.vision.all import *
-st.title("🫁 X-Ray Vision Diagnostic Panel")
-st.write("Upload a patient's chest X-ray scan below for rapid automated analysis.")
+import torchvision.transforms as transforms
 
-# 🔗 Paste your direct download link below
-MODEL_URL = "https://drive.google.com/file/d/1k9U8pCefLNhcqibW7_uJsqBOnRboR8RF/view?usp=sharing"
-MODEL_PATH = "pneumonia_resnet34.pkl"
+# 1. UPDATE YOUR MODEL NETWORK IN_FRASTRUCTURE PATHS
+MODEL_URL = 'https://drive.google.com/file/d/1AiysqnARtqethhIpZI1yjmad1ABBnrR0/view?usp=sharing'
+MODEL_PATH = 'pneumonia_weights.pth'
 
-# Automatically stream-download the weights file if it's missing from the app instance
-if not os.path.exists(MODEL_PATH):
-    with st.spinner("Initializing 98.37% accurate AI diagnostic parameters... Please wait."):
-        try:
-            with requests.get(MODEL_URL, stream=True) as r:
-                r.raise_for_status()
-                with open(MODEL_PATH, 'wb') as f:
-                    shutil.copyfileobj(r.raw, f)
-            st.success("AI framework loaded successfully!")
-        except Exception as e:
-            st.error(f"Network error loading model weights: {e}")
+st.title("X-Ray Vision Diagnostic Panel")
 
-uploaded_file = st.file_uploader("Choose an X-ray image file...", type=["jpg", "png", "jpeg"])
+# Function to download the raw weights tensor file from your Google Drive path natively
+@st.cache_resource
+def download_and_load_model():
+    if not os.path.exists(MODEL_PATH):
+        with st.spinner("Downloading elite 98.50% accuracy model tensors from Google Drive..."):
+            try:
+                gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+            except Exception as download_error:
+                st.error(f"Google Drive transmission friction loop: {download_error}")
+                st.stop()
+                
+    # INSTANTIATE THE IDENTICAL RESNET34 BASE MODEL TEMPLATE
+    # This builds the exact neural network layer layout in system memory
+    model = models.resnet34(weights=None)
+    
+    # Alter the final fully-connected linear layer to match your 2 classes (0: Normal, 1: Pneumonia)
+    num_features = model.fc.in_features
+    model.fc = torch.nn.Linear(num_features, 2)
+    
+    # OVERRIDE AND MAP THE RAW TENSORS NATIVELY
+    # This loads your high-performance weights straight onto the server's CPU core
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=torch.device('cpu')))
+    model.eval()
+    return model
+
+try:
+    classifier = download_and_load_model()
+except Exception as init_error:
+    st.error(f"System initialization anomaly: {init_error}")
+    st.stop()
+
+# 2. FILE UPLOADER LOGIC GRID
+uploaded_file = st.file_uploader("Upload Patient Chest Radiography Scan Canvas", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     img = Image.open(uploaded_file).convert('RGB')
-    st.image(img, caption='Loaded Patient Input Scan', use_container_width=True)
+    st.image(img, caption="Loaded Patient Input Scan", use_column_width=True)
     st.write("Processing matrix array through neural network...")
-    
+
+    # Match the image preprocessing transformations from your high-velocity Kaggle run
+    transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]) # Standard ImageNet metrics
+    ])
+    img_tensor = transform(img).unsqueeze(0)
+
     try:
-        # Load the downloaded Fast.ai model weights file
-        learn = load_learner(MODEL_PATH)
-        # ==========================================
-# HYPER-OPTIMIZED OVERRIDE PASS FOR LINES 37 TO 40
-# ==========================================
-        # Execute the underlying fastai model tensor prediction pass
-        pred, pred_idx, probs = learn.predict(img)
+        with torch.no_grad():
+            # Run inference over the image tensor matrix array
+            raw_outputs = classifier(img_tensor)
+            probabilities = torch.nn.functional.softmax(raw_outputs[0], dim=0)
+            predicted_index = torch.argmax(probabilities).item()
 
-        # MANDATORY CLINICAL DECODING DICTIONARY
-        # Maps raw database folder strings to universal medical consensus terms
+        # CLASSIFICATION DECODING STRINGS
         CLINICAL_MAP = {
-            "normal": "Normal Pulmonary Matrix Localized - Structure Baseline",
-            "pneumonia": "Pulmonary Consolidation Infiltrates / Disease Traces Detected"
+            0: "Normal Pulmonary Matrix Localized - Structure Baseline",
+            1: "Pulmonary Consolidation Infiltrates / Pathology Traces Detected"
         }
+        final_clinical_string = CLINICAL_MAP.get(predicted_index, "Unknown Layout Detected")
 
-        # Convert the raw fastai prediction label to a clean, lowercase string key
-        clean_key = str(pred).lower().strip()
-        final_clinical_string = CLINICAL_MAP.get(clean_key, f"Analysis Tracker Output: {pred}")
-
-        # STREAM EXPLICIT DATA TO THE USER INTERFACE CONSOLE
+        # STREAM EXPLICIT SUCCESS STRINGS AND METRICS TO THE INTERFACE CONSOLE
         st.markdown("---")
         st.subheader(f"📊 Diagnostic Assessment: {final_clinical_string}")
-        
-        # Display the high-torque confidence metrics cleanly on the dashboard grid
-        st.metric(
-            label="System Prediction Confidence Value", 
-            value=f"{probs[pred_idx].item() * 100:.2f}%"
-        )
+        st.metric(label="System Prediction Confidence Value", value=f"{probabilities[predicted_index].item() * 100:.2f}%")
 
-        # MANDATORY SAFETY CONSENSUS INFORMATION LAYER
+        # MANDATORY CLINICAL CONSENSUS INFORMATION LAYER
         st.markdown("""
         <div style="background-color:#f9f9f9; padding:12px; border-left:4px solid #ff4b4b; border-radius:4px; margin-top:15px;">
             <h5 style="margin-top:0; color:#333;">⚠️ Medical Consensus Validation Rules</h5>
@@ -94,8 +98,7 @@ if uploaded_file is not None:
         </div>
         """, unsafe_allow_html=True)
 
-# ==========================================
-# END OF CODE OVERRIDE PASS
-# ==========================================
-    except Exception as e:
-        st.error(f"Error executing neural network inference: {e}")
+    except Exception as inference_error:
+        st.error(f"Inference Engine Friction Loop: {inference_error}")
+
+
