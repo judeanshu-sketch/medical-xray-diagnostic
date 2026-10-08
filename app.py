@@ -1,10 +1,24 @@
+# ==========================================
+# INSERT THESE EXACT LINES AT THE ABSOLUTE TOP OF APP.PY (LINE 1)
+# ==========================================
 import streamlit as st
-from fastai.vision.all import *
-from PIL import Image
-import os
-import requests
-import shutil
 
+# MONKEY-PATCH THE FASTAI RESOLVER MISMATCH
+# This injects a mock fallback dictionary attribute to shield against the deserialization crash
+try:
+    import fastcore.basics
+    if hasattr(fastcore.basics, 'Resolver') and not hasattr(fastcore.basics.Resolver, 'dict'):
+        fastcore.basics.Resolver.dict = lambda self: self.__dict__
+except Exception:
+    pass
+
+# ==========================================
+# KEEP RESIDUE IMPORT CODES UNTOUCHED BELOW THIS LINE
+# ==========================================
+import os
+import shutil
+from PIL import Image
+from fastai.vision.all import *
 st.title("🫁 X-Ray Vision Diagnostic Panel")
 st.write("Upload a patient's chest X-ray scan below for rapid automated analysis.")
 
