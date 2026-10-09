@@ -34,7 +34,7 @@ def download_and_load_model():
     
     # OVERRIDE AND MAP THE RAW TENSORS NATIVELY
     # This loads your high-performance weights straight onto the server's CPU core
-    model.load_state_dict(torch.load(MODEL_PATH, map_location=torch.device('cpu')))
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=torch.device('cpu')), strict=False)
     model.eval()
     return model
 
@@ -100,5 +100,6 @@ if uploaded_file is not None:
 
     except Exception as inference_error:
         st.error(f"Inference Engine Friction Loop: {inference_error}")
+        "fix: apply strict=False flag to override fastai state_dict padding keys" 
 
 
